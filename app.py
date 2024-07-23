@@ -98,7 +98,7 @@ async def main_async():
         st.error("현재 서버에 접속할 수 없습니다. 잠시 후 다시 시도해주세요.")
         return
 
-    prompt = st.text_area("음악 설명을 입력하세요:", "고전게임, 8BIT 게임, 레트로, 전자음악, 칩튠, 칩사운드")
+    prompt = st.text_area("음악 설명을 입력하세요:", "Retro game, chip-tune, electronic, game BGM, 8-bit game, chip-sound")
     make_instrumental = st.checkbox("연주 버전 생성", value=True)
 
     if st.button("음악 생성"):
