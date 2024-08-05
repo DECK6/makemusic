@@ -236,6 +236,7 @@ async def main_async():
                         status = info.get('status', 'unknown')
                         if status != 'complete':
                             all_complete = False
+                        info['original_idea'] = st.session_state['original_idea']
                         
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
