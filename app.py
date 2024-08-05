@@ -127,7 +127,10 @@ async def main_async():
         st.error("현재 서버에 접속할 수 없습니다. 잠시 후 다시 시도해주세요.")
         return
 
-    idea = st.text_area("게임 음악 아이디어를 입력하세요:", "우주 탐험 게임의 시작 화면 배경음악")
+    # 예시 프롬프트를 placeholder로 설정
+    idea = st.text_area("게임 음악 아이디어를 입력하세요:", 
+                        placeholder="우주 탐험 게임의 시작 화면 배경음악",
+                        height=100)  # 높이를 조절하여 더 나은 사용자 경험 제공
 
     # 음악 스타일 선택 (라디오 버튼, 가로 정렬)
     style = st.radio("음악 스타일을 선택하세요:", list(MUSIC_STYLES.keys()), horizontal=True)
