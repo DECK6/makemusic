@@ -124,9 +124,8 @@ def display_music_info(music_info):
 
 def extract_music_ids(result):
     """API 응답에서 음악 ID를 추출합니다."""
-    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
-        return [item['id'] for item in result[0].values() if isinstance(item, dict) and 'id' in item]
-    return []
+    return [item['id'] for item in result if 'id' in item]
+
 
 
 async def send_email_async(recipient_email, music_info_list):
