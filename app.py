@@ -116,11 +116,21 @@ def display_music_info(music_info):
     """음악 정보를 표시합니다."""
     st.markdown(f"### {music_info.get('title', 'Untitled')}")
     st.write(f"상태: {music_info.get('status', 'Unknown')}")
+    
     if music_info.get('audio_url'):
         st.audio(music_info['audio_url'])
-    if music_info.get('image_url'):
-        st.image(music_info['image_url'], caption="Cover Art")
-    st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if music_info.get('image_url'):
+            st.image(music_info['image_url'], caption="Cover Art")
+    
+    with col2:
+        if music_info.get('idea'):
+            st.write(f"입력한 아이디어: {music_info['idea']}")
+        st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
+
 
 def extract_music_ids(result):
     """API 응답에서 음악 ID를 추출합니다."""
