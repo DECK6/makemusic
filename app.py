@@ -143,16 +143,18 @@ def extract_music_ids(result):
 def display_music_info(music_info, col1, col2):
     """음악 정보를 표시합니다."""
     with col1:
+        st.markdown(f"### {music_info.get('title', 'Untitled')}")
+        if music_info.get('audio_url'):
+            st.audio(music_info['audio_url'])
         if music_info.get('image_url'):
             st.image(music_info['image_url'], caption="Cover Art")
+    
+    with col2:
         st.write("**입력한 아이디어:**")
         st.write(music_info.get('original_idea', 'No idea available'))
         st.write("**생성된 프롬프트:**")
         st.write(music_info.get('gpt_description_prompt', 'No prompt available'))
-    
-    with col2:
-        st.write(f"**모델:** {music_info.get('model_name', 'Unknown Model')}")
-        st.write(f"**생성 시간:** {music_info.get('created_at', 'Unknown')}")
+
 
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
@@ -206,17 +208,12 @@ async def main_async():
             generated_prompt = st.session_state['generated_prompt']
 
             for idx, music_id in enumerate(music_ids, 1):
-                st.write(f"## 음악 {idx}")
                 music_info = await check_music_status([music_id])
                 if music_info:
                     info = music_info[0]
                     info['original_idea'] = original_idea
                     info['gpt_description_prompt'] = generated_prompt
 
-                    st.text_input("제목", value=info.get('title', f"Track {idx}"), key=f"title_{idx}")
-                    if info.get('audio_url'):
-                        st.audio(info['audio_url'])
-                    
                     music_col1, music_col2 = st.columns(2)
                     display_music_info(info, music_col1, music_col2)
                     
@@ -227,7 +224,7 @@ async def main_async():
                             st.success(f"생성된 음악 링크가 {recipient_email}로 전송되었습니다.")
                         else:
                             st.error("이메일 전송에 실패했습니다.")
-
+                            
 def main():
     asyncio.run(main_async())
 
