@@ -6,9 +6,14 @@ import aiohttp
 import json
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from openai import OpenAI
 
 SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
+HEADER_URL = "https://github.com/DECK6/gamechar/blob/main/header.png?raw=true"
+
+# OpenAI 클라이언트 초기화 (API 키는 Streamlit의 시크릿에서 가져옴)
+client = OpenAI(api_key=st.secrets["openai_api_key"])
 
 def requests_retry_session(
     retries=5,
@@ -91,17 +96,41 @@ def extract_music_ids(result):
     """API 응답에서 음악 ID를 추출합니다."""
     return [item['id'] for item in result if 'id' in item]
 
+async def generate_prompt(idea):
+    """GPT-4를 사용하여 게임 음악 프롬프트를 생성합니다."""
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an assistant specialized in creating prompts for game music generation. Convert user ideas into detailed prompts suitable for AI music generation, focusing on game music characteristics."},
+                {"role": "user", "content": f"Create a detailed prompt for game music based on this idea: {idea}"}
+            ]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        st.error(f"프롬프트 생성 중 오류 발생: {e}")
+        return None
+
 async def main_async():
+    st.image(HEADER_URL, use_column_width=True)
     st.title("AI 게임 음악 생성기")
 
     if not check_server_status():
         st.error("현재 서버에 접속할 수 없습니다. 잠시 후 다시 시도해주세요.")
         return
 
-    prompt = st.text_area("음악 설명을 입력하세요:", "Retro game, chip-tune, electronic, game BGM, 8-bit game, chip-sound")
+    idea = st.text_area("게임 음악 아이디어를 입력하세요:", "레트로 스타일의 우주 탐험 게임 배경음악")
     make_instrumental = st.checkbox("연주 버전 생성", value=True)
 
     if st.button("음악 생성"):
+        with st.spinner("프롬프트 생성 중..."):
+            prompt = await generate_prompt(idea)
+            if not prompt:
+                st.error("프롬프트 생성에 실패했습니다. 다시 시도해주세요.")
+                return
+            st.success("프롬프트가 생성되었습니다.")
+            st.write("생성된 프롬프트:", prompt)
+
         with st.spinner("음악 생성 요청을 보내는 중..."):
             result = await generate_music_async(prompt, make_instrumental)
 
