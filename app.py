@@ -133,8 +133,8 @@ async def send_email_async(recipient_email, audio_url, style):
 def extract_music_ids(result):
     """API 응답에서 음악 ID를 추출합니다."""
     music_ids = []
-    if isinstance(result, list) and len(result) > 0:
-        for item in result[0].values():
+    if isinstance(result, list):
+        for item in result:
             if isinstance(item, dict) and 'id' in item:
                 music_ids.append(item['id'])
     return music_ids
@@ -179,23 +179,24 @@ async def main_async():
                     st.error("프롬프트 생성에 실패했습니다. 다시 시도해주세요.")
                     return
                 st.success("프롬프트가 생성되었습니다.")
-
+    
             with st.spinner("음악 생성 요청을 보내는 중..."):
                 result = await generate_music_async(prompt)
-
+    
             if result:
                 music_ids = extract_music_ids(result)
                 if not music_ids:
                     st.error("음악 ID를 추출할 수 없습니다. API 응답 형식이 변경되었을 수 있습니다.")
-                    st.json(result)
+                    st.json(result)  # API 응답을 표시하여 디버깅에 도움을 줍니다.
                     return
 
                 st.success(f"음악 생성 요청이 성공적으로 전송되었습니다! 생성된 음악 수: {len(music_ids)}")
-                
+            
                 # 세션 상태에 음악 ID 저장
                 st.session_state['music_ids'] = music_ids
                 st.session_state['original_idea'] = idea
                 st.session_state['generated_prompt'] = prompt
+
 
     with col2:
         if 'music_ids' in st.session_state:
