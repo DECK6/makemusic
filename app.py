@@ -12,6 +12,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from openai import OpenAI
 
+st.set_page_config(layout="wide", page_title="AI 게임 음악 생성기")
 
 SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
