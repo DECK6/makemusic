@@ -144,7 +144,7 @@ async def send_email_async(recipient_email, music_info_list):
     html_content = "<html><body>"
     for idx, info in enumerate(music_info_list, 1):
         html_content += f"<h2>음악 {idx}: {info.get('title', 'Untitled')}</h2>"
-        html_content += f"<p><strong>아이디어:</strong> {info.get('original_idea', 'N/A')}</p>"
+        html_content += f"<p><strong>아이디어:</strong> {st.session_state.get('original_idea', 'N/A')}</p>"
         html_content += f"<p><strong>프롬프트:</strong> {info.get('gpt_description_prompt', 'No prompt available')}</p>"
         html_content += f"<p><a href='{info.get('audio_url', '#')}'>음악 다운로드 링크</a></p>"
         if info.get('image_url'):
@@ -251,6 +251,7 @@ async def main_async():
                 st.success(f"음악 생성 요청 완료! {len(music_ids)}개의 트랙이 생성 중입니다.")
 
     with col2:
+        st.markdown("⏳ **음악 생성에는 최대 2~3분정도 소요됩니다. 새로고침 하지 말고 기다려주세요.**")
         if 'music_ids' in st.session_state:
             status_text = st.empty()
             music_info_placeholders = [st.empty() for _ in st.session_state['music_ids']]
@@ -289,13 +290,15 @@ async def main_async():
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
 
-                    elapsed_time = time.time() - start_time
+#                    elapsed_time = time.time() - start_time
 #                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
                         # 이메일 전송
                         music_info_list = [await fetch_music_info(music_id) for music_id in st.session_state['music_ids']]
+                        for info in music_info_list:
+                            info['original_idea'] = st.session_state['original_idea']
                         if await send_email_async(recipient_email, music_info_list):
                             st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
                         else:
