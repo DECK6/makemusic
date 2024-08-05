@@ -251,8 +251,6 @@ async def main_async():
 
     with col2:
         if 'music_ids' in st.session_state:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
             music_info_placeholders = [st.empty() for _ in st.session_state['music_ids']]
 
             start_time = time.time()
