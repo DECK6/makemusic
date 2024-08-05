@@ -117,8 +117,8 @@ async def translate_to_korean(text):
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a translator specialized in translating English text to Korean."},
-                {"role": "user", "content": f"Translate the following text to Korean: {text}"}
+                {"role": "system", "content": "You are a translator specialized in translating English text to Korean. Provide a natural, context-appropriate translation."},
+                {"role": "user", "content": f"Translate the following text to natural, context-appropriate Korean: {text}"}
             ]
         )
         return completion.choices[0].message.content
@@ -165,6 +165,10 @@ async def fetch_music_info(session, music_id):
             data = await response.json()
             return data[0] if data else None
     return None
+
+def extract_music_ids(result):
+    """API 응답에서 음악 ID를 추출합니다."""
+    return [item['id'] for item in result if 'id' in item]
 
 def display_music_info(music_info):
     """음악 정보를 표시합니다."""
@@ -257,9 +261,9 @@ async def main_async():
                         info['original_idea'] = st.session_state['original_idea']
                         info['gpt_description_prompt'] = st.session_state['generated_prompt']
                         
-                        # 번역
-                        info['title'] = await translate_to_korean(info['title'])
-                        info['gpt_description_prompt'] = await translate_to_korean(info['gpt_description_prompt'])
+                        # 번역된 제목 추가
+                        translated_title = await translate_to_korean(info['title'])
+                        info['title'] = translated_title
 
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
