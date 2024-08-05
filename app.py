@@ -66,7 +66,7 @@ def check_server_status():
         return False
 
 async def generate_music_async(prompt):
-    """API를 사용하여 비동기적으로 음악을 생성합니다."""
+    """인공지능이 작곡을 시작합니다."""
     payload = {
         "prompt": prompt,
         "make_instrumental": True,  # 항상 연주 버전 생성
@@ -97,7 +97,7 @@ async def check_music_status(music_ids):
             return []
 
 async def generate_prompt(idea, style):
-    """GPT를 사용하여 게임 음악 프롬프트를 생성합니다."""
+    """GPT가 악상을 떠올리는 중입니다."""
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -134,7 +134,7 @@ async def translate_to_korean(text):
         return text
 
 async def send_email_async(recipient_email, music_info_list):
-    """생성된 음악을 이메일로 전송합니다."""
+    """작곡된 음악을 이메일로 전송합니다."""
     msg = MIMEMultipart()
     msg['Subject'] = '2024 Youth E-Sports Festival에서 작곡한 게임 음악이 도착했습니다.'
     msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
