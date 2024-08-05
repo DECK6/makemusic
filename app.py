@@ -4,13 +4,26 @@ import time
 import asyncio
 import aiohttp
 import json
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.audio import MIMEAudio
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from openai import OpenAI
 
+
 SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
 HEADER_URL = "https://github.com/DECK6/gamechar/blob/main/header.png?raw=true"
+
+# 이메일 설정
+EMAIL_SETTINGS = {
+    "SMTP_SERVER": "smtp.gmail.com",
+    "SMTP_PORT": 587,
+    "SENDER_EMAIL": "dnmdaia@gmail.com",
+    "SENDER_PASSWORD": "iudy dgqr fuin lukc"
+}
 
 # 음악 스타일 정의
 MUSIC_STYLES = {
@@ -119,6 +132,26 @@ async def generate_prompt(idea, style):
         st.error(f"프롬프트 생성 중 오류 발생: {e}")
         return None
 
+async def send_email_async(recipient_email, audio_url, style):
+    msg = MIMEMultipart()
+    msg['Subject'] = f'2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
+    msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
+    msg['To'] = recipient_email
+    
+    text = MIMEText(f"2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.\n스타일: {style}\n음악 다운로드 링크: {audio_url}")
+    msg.attach(text)
+
+    try:
+        server = smtplib.SMTP(EMAIL_SETTINGS["SMTP_SERVER"], EMAIL_SETTINGS["SMTP_PORT"])
+        await asyncio.to_thread(server.starttls)
+        await asyncio.to_thread(server.login, EMAIL_SETTINGS["SENDER_EMAIL"], EMAIL_SETTINGS["SENDER_PASSWORD"])
+        await asyncio.to_thread(server.send_message, msg)
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"이메일 전송 중 오류가 발생했습니다: {str(e)}")
+        return False
+
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
     st.title("AI 게임 음악 생성기")
@@ -127,13 +160,13 @@ async def main_async():
         st.error("현재 서버에 접속할 수 없습니다. 잠시 후 다시 시도해주세요.")
         return
 
-    # 예시 프롬프트를 placeholder로 설정
     idea = st.text_area("게임 음악 아이디어를 입력하세요:", 
                         placeholder="우주 탐험 게임의 시작 화면 배경음악",
-                        height=100)  # 높이를 조절하여 더 나은 사용자 경험 제공
+                        height=100)
 
-    # 음악 스타일 선택 (라디오 버튼, 가로 정렬)
     style = st.radio("음악 스타일을 선택하세요:", list(MUSIC_STYLES.keys()), horizontal=True)
+    
+    recipient_email = st.text_input("결과를 받을 이메일 주소를 입력하세요:")
 
     if st.button("음악 생성"):
         with st.spinner("프롬프트 생성 중..."):
@@ -151,7 +184,7 @@ async def main_async():
             music_ids = extract_music_ids(result)
             if not music_ids:
                 st.error("음악 ID를 추출할 수 없습니다. API 응답 형식이 변경되었을 수 있습니다.")
-                st.json(result)  # API 응답을 표시하여 디버깅에 도움을 줍니다.
+                st.json(result)
                 return
 
             st.success(f"음악 생성 요청이 성공적으로 전송되었습니다! 생성된 음악 수: {len(music_ids)}")
@@ -181,6 +214,13 @@ async def main_async():
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
+                        
+                        if recipient_email:
+                            for info in music_info:
+                                if await send_email_async(recipient_email, info['audio_url'], style):
+                                    st.success(f"생성된 음악 링크가 {recipient_email}로 전송되었습니다.")
+                                else:
+                                    st.error("이메일 전송에 실패했습니다.")
                         break
 
                 await asyncio.sleep(10)  # 10초마다 상태 확인
