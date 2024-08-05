@@ -12,7 +12,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from openai import OpenAI
 
-st.set_page_config(layout="wide", page_title="AI 게임 음악 생성기")
+st.set_page_config(layout="wide", page_title="AI 게임 음악 작곡")
 
 SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
@@ -136,7 +136,7 @@ async def translate_to_korean(text):
 async def send_email_async(recipient_email, music_info_list):
     """생성된 음악을 이메일로 전송합니다."""
     msg = MIMEMultipart()
-    msg['Subject'] = '2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
+    msg['Subject'] = '2024 Youth E-Sports Festival에서 작곡한 게임 음악이 도착했습니다.'
     msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
     msg['To'] = recipient_email
 
@@ -210,7 +210,7 @@ def display_music_info(music_info):
 
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
-    st.title("AI 게임 음악 생성기")
+    st.title("AI 게임 음악 작곡")
 
     if not check_server_status():
         st.error("현재 서버에 접속할 수 없습니다. 잠시 후 다시 시도해주세요.")
@@ -251,7 +251,7 @@ async def main_async():
                 st.success(f"음악 생성 요청 완료! {len(music_ids)}개의 트랙이 생성 중입니다.")
 
     with col2:
-        st.markdown("⏳ **음악 생성에는 최대 2~3분정도 소요됩니다. 새로고침 하지 말고 기다려주세요.**")
+        st.markdown("⏳ **음악 작곡에는 최대 2~3분정도 소요됩니다. 새로고침 하지 말고 기다려주세요.**")
         if 'music_ids' in st.session_state:
             status_text = st.empty()
             music_info_placeholders = [st.empty() for _ in st.session_state['music_ids']]
@@ -294,13 +294,13 @@ async def main_async():
 #                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
-                        st.success("모든 음악 생성이 완료되었습니다!")
+                        st.success("모든 음악 작곡이 완료되었습니다!")
                         # 이메일 전송
                         music_info_list = [await fetch_music_info(music_id) for music_id in st.session_state['music_ids']]
                         for info in music_info_list:
                             info['original_idea'] = st.session_state['original_idea']
                         if await send_email_async(recipient_email, music_info_list):
-                            st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
+                            st.success(f"완성된 게임 음악이 {recipient_email}로 전송되었습니다.")
                         else:
                             st.error("이메일 전송에 실패했습니다.")
                         break
