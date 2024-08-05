@@ -111,7 +111,7 @@ async def generate_prompt(idea, style):
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are an assistant specialized in creating prompts for instrumental game music generation. Convert user ideas into detailed prompts suitable for AI music generation, focusing on game music characteristics without lyrics."},
-                {"role": "user", "content": f"Create a detailed prompt for instrumental game music based on this idea: {idea}. The music style should be: {MUSIC_STYLES[style]}"}
+                {"role": "user", "content": f"Create up to three sentences of simple prompt without description for instrumental game music based on this idea: {idea}. The music style should be: {MUSIC_STYLES[style]}"}
             ]
         )
         return completion.choices[0].message.content
