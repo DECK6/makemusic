@@ -165,12 +165,13 @@ async def send_email_async(recipient_email, music_info_list):
         st.error(f"이메일 전송 중 오류 발생: {str(e)}")
         return False
 
-async def fetch_music_info(session, music_id):
+async def fetch_music_info(music_id):
     """비동기적으로 음악 정보를 가져옵니다."""
-    async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={music_id}") as response:
-        if response.status == 200:
-            data = await response.json()
-            return data[0] if data else None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={music_id}") as response:
+            if response.status == 200:
+                data = await response.json()
+                return data[0] if data else None
     return None
 
 def extract_music_ids(result):
@@ -251,7 +252,6 @@ async def main_async():
 
     with col2:
         if 'music_ids' in st.session_state:
-            progress_bar = st.progress(0)
             status_text = st.empty()
             music_info_placeholders = [st.empty() for _ in st.session_state['music_ids']]
 
@@ -290,14 +290,12 @@ async def main_async():
                             display_music_info(info)
 
                     elapsed_time = time.time() - start_time
-                    progress = min(elapsed_time / MAX_WAIT_TIME, 1.0)
-                    progress_bar.progress(progress)
                     status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
                         # 이메일 전송
-                        music_info_list = [await fetch_music_info(session, music_id) for music_id in st.session_state['music_ids']]
+                        music_info_list = [await fetch_music_info(music_id) for music_id in st.session_state['music_ids']]
                         if await send_email_async(recipient_email, music_info_list):
                             st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
                         else:
