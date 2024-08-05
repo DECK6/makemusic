@@ -115,7 +115,18 @@ async def generate_prompt(idea, style):
 def display_music_info(music_info):
     """음악 정보를 표시합니다."""
     st.markdown(f"### {music_info.get('title', 'Untitled')}")
-    st.write(f"상태: {music_info.get('status', 'Unknown')}")
+    
+    # 상태를 한국어로 변환
+    status_mapping = {
+        'submitted': '생성 요청',
+        'queued': '대기중',
+        'streaming': '생성중',
+        'complete': '완료'
+    }
+    status = music_info.get('status', 'Unknown')
+    status_korean = status_mapping.get(status, '알 수 없음')
+    
+    st.write(f"상태: {status_korean}")
     
     if music_info.get('audio_url'):
         st.audio(music_info['audio_url'])
@@ -130,6 +141,7 @@ def display_music_info(music_info):
         if 'original_idea' in music_info:
             st.write(f"입력한 아이디어: {music_info['original_idea']}")
         st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
+
 
 
 def extract_music_ids(result):
