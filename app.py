@@ -89,10 +89,11 @@ async def check_music_status(music_ids):
         try:
             async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={','.join(music_ids)}", timeout=30) as response:
                 response.raise_for_status()
-                return await response.json()
+                result = await response.json()
+                return result if isinstance(result, list) else []
         except aiohttp.ClientError as e:
             st.error(f"상태 확인 중 오류 발생: {e}")
-            return None
+            return []
 
 
 async def generate_prompt(idea, style):
