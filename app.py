@@ -184,10 +184,10 @@ def display_music_info(music_info):
     
     # 상태를 한국어로 변환
     status_mapping = {
-        'submitted': '생성 요청',
-        'queued': '대기중',
-        'streaming': '생성중',
-        'complete': '완료'
+        'submitted': '🎵 작곡 요청',
+        'queued': '⌛ 대기중',
+        'streaming': '🎶 작곡중(스트리밍)',
+        'complete': '✅ 작곡 완료'
     }
     status = music_info.get('status', 'Unknown')
     status_korean = status_mapping.get(status, '알 수 없음')
