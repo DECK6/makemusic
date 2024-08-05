@@ -7,7 +7,6 @@ import json
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.audio import MIMEAudio
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from openai import OpenAI
@@ -207,6 +206,7 @@ def display_music_info(music_info):
             st.image(music_info['image_url'], caption="Cover Art")
     
     with col2:
+        st.markdown("⏳ **음악 작곡에는 최대 2~3분정도 소요됩니다. 새로고침 하지 말고 기다려주세요.**")
         if 'original_idea' in music_info:
             st.write(f"입력한 아이디어: {music_info['original_idea']}")
         st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
@@ -228,8 +228,8 @@ async def main_async():
         style = st.radio("음악 스타일을 선택하세요:", list(MUSIC_STYLES.keys()), horizontal=True)
         recipient_email = st.text_input("결과를 받을 이메일 주소를 입력하세요:")
 
-        if st.button("음악 생성"):
-            with st.spinner("음악 생성 중..."):
+        if st.button("음악 작곡"):
+            with st.spinner("음악 작곡 중..."):
                 prompt = await generate_prompt(idea, style)
                 if not prompt:
                     st.error("프롬프트 생성에 실패했습니다.")
@@ -251,7 +251,7 @@ async def main_async():
                 st.session_state['generated_prompt'] = prompt
                 st.session_state['translated_titles'] = {}
                 st.session_state['translated_prompts'] = {}
-                st.success(f"음악 생성 요청 완료! {len(music_ids)}개의 트랙이 생성 중입니다.")
+                st.success(f"음악 작곡 요청 완료! {len(music_ids)}곡이 작곡 중입니다.")
 
     with col2:
         st.markdown("⏳ **음악 작곡에는 최대 2~3분정도 소요됩니다. 새로고침 하지 말고 기다려주세요.**")
@@ -292,9 +292,6 @@ async def main_async():
 
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
-
-#                    elapsed_time = time.time() - start_time
-#                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 작곡이 완료되었습니다!")
