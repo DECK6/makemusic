@@ -15,7 +15,7 @@ st.set_page_config(layout="wide", page_title="AI 게임 음악 작곡")
 
 SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
-HEADER_URL = "https://i.ibb.co/NKCxYqy/temp-Image-Bl-Kh-HN.jpg"
+HEADER_URL = "https://i.ibb.co/fHFM0Wx/temp-Image-Bl-Kh-HN.jpg"
 
 # 이메일 설정
 EMAIL_SETTINGS = {
