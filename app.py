@@ -85,7 +85,7 @@ async def generate_music_async(prompt):
             return None
 
 async def check_music_status(music_ids):
-#    """생성된 음악의 상태를 확인합니다."""
+    """생성된 음악의 상태를 확인합니다."""
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={','.join(music_ids)}", timeout=30) as response:
@@ -111,6 +111,27 @@ async def generate_prompt(idea, style):
         st.error(f"프롬프트 생성 중 오류 발생: {e}")
         return None
 
+translation_cache = {}
+
+async def translate_to_korean(text):
+    """텍스트를 한국어로 번역합니다."""
+    if text in translation_cache:
+        return translation_cache[text]
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a translator specialized in translating English text to Korean. Provide a natural, context-appropriate translation."},
+                {"role": "user", "content": f"Translate the following text to natural, context-appropriate Korean: {text}"}
+            ]
+        )
+        translated_text = completion.choices[0].message.content
+        translation_cache[text] = translated_text
+        return translated_text
+    except Exception as e:
+        st.error(f"번역 중 오류 발생: {e}")
+        return text
 
 async def send_email_async(recipient_email, music_info_list):
     """생성된 모든 음악 정보를 포함하여 이메일을 전송합니다."""
@@ -186,29 +207,6 @@ def display_music_info(music_info):
             st.write(f"입력한 아이디어: {music_info['original_idea']}")
         st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
 
-# 번역 캐시를 저장할 딕셔너리
-translation_cache = {}
-
-async def translate_to_korean(text):
-#    """텍스트를 한국어로 번역합니다."""
-    if text in translation_cache:
-        return translation_cache[text]
-
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a translator specialized in translating English text to Korean. Provide a natural, context-appropriate translation."},
-                {"role": "user", "content": f"Translate the following text to natural, context-appropriate Korean: {text}"}
-            ]
-        )
-        translated_text = completion.choices[0].message.content
-        translation_cache[text] = translated_text
-        return translated_text
-    except Exception as e:
-        st.error(f"번역 중 오류 발생: {e}")
-        return text
-
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
     st.title("AI 게임 음악 생성기")
@@ -247,10 +245,14 @@ async def main_async():
                 st.session_state['music_ids'] = music_ids
                 st.session_state['original_idea'] = idea
                 st.session_state['generated_prompt'] = prompt
+                st.session_state['translated_titles'] = {}
+                st.session_state['translated_prompts'] = {}
                 st.success(f"음악 생성 요청 완료! {len(music_ids)}개의 트랙이 생성 중입니다.")
 
     with col2:
         if 'music_ids' in st.session_state:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
             music_info_placeholders = [st.empty() for _ in st.session_state['music_ids']]
 
             start_time = time.time()
@@ -268,31 +270,43 @@ async def main_async():
                         info['original_idea'] = st.session_state['original_idea']
                         info['gpt_description_prompt'] = st.session_state['generated_prompt']
                         
-                        # 번역된 제목 및 프롬프트 추가
-                        translated_title = await translate_to_korean(info['title'])
-                        translated_prompt = await translate_to_korean(info['gpt_description_prompt'])
+                        # 번역된 제목 및 프롬프트 추가 (한번만 번역)
+                        if info['title'] not in st.session_state['translated_titles']:
+                            translated_title = await translate_to_korean(info['title'])
+                            st.session_state['translated_titles'][info['title']] = translated_title
+                        else:
+                            translated_title = st.session_state['translated_titles'][info['title']]
+
+                        if info['gpt_description_prompt'] not in st.session_state['translated_prompts']:
+                            translated_prompt = await translate_to_korean(info['gpt_description_prompt'])
+                            st.session_state['translated_prompts'][info['gpt_description_prompt']] = translated_prompt
+                        else:
+                            translated_prompt = st.session_state['translated_prompts'][info['gpt_description_prompt']]
+
                         info['title'] = translated_title
                         info['gpt_description_prompt'] = translated_prompt
 
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
 
+                    elapsed_time = time.time() - start_time
+                    progress = min(elapsed_time / MAX_WAIT_TIME, 1.0)
+                    progress_bar.progress(progress)
+                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
+                        # 이메일 전송
+                        music_info_list = [await fetch_music_info(session, music_id) for music_id in st.session_state['music_ids']]
+                        if await send_email_async(recipient_email, music_info_list):
+                            st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
+                        else:
+                            st.error("이메일 전송에 실패했습니다.")
                         break
 
                 await asyncio.sleep(5)  # 5초마다 상태 확인
             else:
                 st.warning("최대 대기 시간을 초과했습니다. 일부 음악이 아직 완성되지 않았을 수 있습니다.")
-                
-                # 이메일 전송 (모든 음악이 완성되었을 때만)
-                if all_complete and recipient_email:
-                    music_info_list = [await fetch_music_info(session, music_id) for music_id in st.session_state['music_ids']]
-                    if await send_email_async(recipient_email, music_info_list):
-                        st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
-                    else:
-                        st.error("이메일 전송에 실패했습니다.")
 
 if __name__ == "__main__":
     asyncio.run(main_async())
