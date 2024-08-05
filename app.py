@@ -143,11 +143,11 @@ async def send_email_async(recipient_email, music_info_list):
     # HTML 본문 생성
     html_content = "<html><body>"
     for idx, info in enumerate(music_info_list, 1):
-        html_content += f"<h2>음악 {idx}: {info['title']}</h2>"
-        html_content += f"<p><strong>아이디어:</strong> {info['original_idea']}</p>"
-        html_content += f"<p><strong>프롬프트:</strong> {info['gpt_description_prompt']}</p>"
-        html_content += f"<p><a href='{info['audio_url']}'>음악 다운로드 링크</a></p>"
-        if info['image_url']:
+        html_content += f"<h2>음악 {idx}: {info.get('title', 'Untitled')}</h2>"
+        html_content += f"<p><strong>아이디어:</strong> {info.get('original_idea', 'N/A')}</p>"
+        html_content += f"<p><strong>프롬프트:</strong> {info.get('gpt_description_prompt', 'No prompt available')}</p>"
+        html_content += f"<p><a href='{info.get('audio_url', '#')}'>음악 다운로드 링크</a></p>"
+        if info.get('image_url'):
             html_content += f"<img src='{info['image_url']}' alt='Cover Art' style='max-width:300px;'><br>"
         html_content += "<hr>"
     html_content += "</body></html>"
@@ -290,7 +290,7 @@ async def main_async():
                             display_music_info(info)
 
                     elapsed_time = time.time() - start_time
-                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
+#                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
