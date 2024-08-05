@@ -127,8 +127,8 @@ def display_music_info(music_info):
             st.image(music_info['image_url'], caption="Cover Art")
     
     with col2:
-        if music_info.get('idea'):
-            st.write(f"입력한 아이디어: {music_info['idea']}")
+        if 'original_idea' in music_info:
+            st.write(f"입력한 아이디어: {music_info['original_idea']}")
         st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
 
 
