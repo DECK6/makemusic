@@ -85,7 +85,7 @@ async def generate_music_async(prompt):
             return None
 
 async def check_music_status(music_ids):
-    """생성된 음악의 상태를 확인합니다."""
+#    """생성된 음악의 상태를 확인합니다."""
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={','.join(music_ids)}", timeout=30) as response:
@@ -97,7 +97,7 @@ async def check_music_status(music_ids):
             return []
 
 async def generate_prompt(idea, style):
-    """GPT-4를 사용하여 게임 음악 프롬프트를 생성합니다."""
+    """GPT를 사용하여 게임 음악 프롬프트를 생성합니다."""
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -114,7 +114,7 @@ async def generate_prompt(idea, style):
 translation_cache = {}
 
 async def translate_to_korean(text):
-    """텍스트를 한국어로 번역합니다."""
+#    """텍스트를 한국어로 번역합니다."""
     if text in translation_cache:
         return translation_cache[text]
 
@@ -134,7 +134,7 @@ async def translate_to_korean(text):
         return text
 
 async def send_email_async(recipient_email, music_info_list):
-    """생성된 모든 음악 정보를 포함하여 이메일을 전송합니다."""
+    """생성된 음악을 이메일로 전송합니다."""
     msg = MIMEMultipart()
     msg['Subject'] = '2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
     msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
@@ -166,7 +166,7 @@ async def send_email_async(recipient_email, music_info_list):
         return False
 
 async def fetch_music_info(music_id):
-    """비동기적으로 음악 정보를 가져옵니다."""
+#    """비동기적으로 음악 정보를 가져옵니다."""
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={music_id}") as response:
             if response.status == 200:
