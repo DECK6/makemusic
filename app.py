@@ -111,25 +111,6 @@ async def generate_prompt(idea, style):
         st.error(f"프롬프트 생성 중 오류 발생: {e}")
         return None
 
-async def send_email_async(recipient_email, audio_url, style):
-    msg = MIMEMultipart()
-    msg['Subject'] = f'2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
-    msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
-    msg['To'] = recipient_email
-    
-    text = MIMEText(f"2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.\n스타일: {style}\n음악 다운로드 링크: {audio_url}")
-    msg.attach(text)
-
-    try:
-        server = smtplib.SMTP(EMAIL_SETTINGS["SMTP_SERVER"], EMAIL_SETTINGS["SMTP_PORT"])
-        await asyncio.to_thread(server.starttls)
-        await asyncio.to_thread(server.login, EMAIL_SETTINGS["SENDER_EMAIL"], EMAIL_SETTINGS["SENDER_PASSWORD"])
-        await asyncio.to_thread(server.send_message, msg)
-        server.quit()
-        return True
-    except Exception as e:
-        st.error(f"이메일 전송 중 오류가 발생했습니다: {str(e)}")
-        return False
 
 def extract_music_ids(result):
     """API 응답에서 음악 ID를 추출합니다."""
@@ -156,6 +137,46 @@ def display_music_info(music_info, col1, col2):
         st.write(music_info.get('gpt_description_prompt', 'No prompt available'))
 
 
+async def fetch_music_info(session, music_id):
+    """비동기적으로 음악 정보를 가져옵니다."""
+    async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={music_id}") as response:
+        if response.status == 200:
+            data = await response.json()
+            return data[0] if data else None
+    return None
+
+async def send_email_async(recipient_email, music_info_list):
+    """생성된 모든 음악 정보를 포함하여 이메일을 전송합니다."""
+    msg = MIMEMultipart()
+    msg['Subject'] = '2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
+    msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
+    msg['To'] = recipient_email
+
+    # HTML 본문 생성
+    html_content = "<html><body>"
+    for idx, info in enumerate(music_info_list, 1):
+        html_content += f"<h2>음악 {idx}: {info['title']}</h2>"
+        html_content += f"<p><strong>아이디어:</strong> {info['original_idea']}</p>"
+        html_content += f"<p><strong>프롬프트:</strong> {info['gpt_description_prompt']}</p>"
+        html_content += f"<p><a href='{info['audio_url']}'>음악 다운로드 링크</a></p>"
+        if info['image_url']:
+            html_content += f"<img src='{info['image_url']}' alt='Cover Art' style='max-width:300px;'><br>"
+        html_content += "<hr>"
+    html_content += "</body></html>"
+
+    msg.attach(MIMEText(html_content, 'html'))
+
+    try:
+        server = smtplib.SMTP(EMAIL_SETTINGS["SMTP_SERVER"], EMAIL_SETTINGS["SMTP_PORT"])
+        server.starttls()
+        server.login(EMAIL_SETTINGS["SENDER_EMAIL"], EMAIL_SETTINGS["SENDER_PASSWORD"])
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"이메일 전송 중 오류 발생: {str(e)}")
+        return False
+
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
     st.title("AI 게임 음악 생성기")
@@ -170,63 +191,57 @@ async def main_async():
         idea = st.text_area("게임 음악 아이디어를 입력하세요:", 
                             placeholder="우주 탐험 게임의 시작 화면 배경음악",
                             height=100)
-
         style = st.radio("음악 스타일을 선택하세요:", list(MUSIC_STYLES.keys()), horizontal=True)
-        
         recipient_email = st.text_input("결과를 받을 이메일 주소를 입력하세요:")
 
         if st.button("음악 생성"):
-            with st.spinner("프롬프트 생성 중..."):
+            with st.spinner("음악 생성 중..."):
                 prompt = await generate_prompt(idea, style)
                 if not prompt:
-                    st.error("프롬프트 생성에 실패했습니다. 다시 시도해주세요.")
+                    st.error("프롬프트 생성에 실패했습니다.")
                     return
-                st.success("프롬프트가 생성되었습니다.")
-    
-            with st.spinner("음악 생성 요청을 보내는 중..."):
+                
                 result = await generate_music_async(prompt)
-    
-            if result:
-                music_ids = extract_music_ids(result)
-                if not music_ids:
-                    st.error("음악 ID를 추출할 수 없습니다. API 응답 형식이 변경되었을 수 있습니다.")
-                    st.json(result)  # API 응답을 표시하여 디버깅에 도움을 줍니다.
+                if not result:
+                    st.error("음악 생성에 실패했습니다.")
                     return
 
-                st.success(f"음악 생성 요청이 성공적으로 전송되었습니다! 생성된 음악 수: {len(music_ids)}")
-            
-                # 세션 상태에 음악 ID 저장
+                music_ids = extract_music_ids(result)
+                if not music_ids:
+                    st.error("음악 ID를 추출할 수 없습니다.")
+                    return
+
                 st.session_state['music_ids'] = music_ids
                 st.session_state['original_idea'] = idea
                 st.session_state['generated_prompt'] = prompt
-
+                st.success(f"음악 생성 완료! {len(music_ids)}개의 트랙이 생성되었습니다.")
 
     with col2:
         if 'music_ids' in st.session_state:
-            music_ids = st.session_state['music_ids']
-            original_idea = st.session_state['original_idea']
-            generated_prompt = st.session_state['generated_prompt']
+            music_info_list = []
+            async with aiohttp.ClientSession() as session:
+                for music_id in st.session_state['music_ids']:
+                    info = await fetch_music_info(session, music_id)
+                    if info:
+                        info['original_idea'] = st.session_state['original_idea']
+                        info['gpt_description_prompt'] = st.session_state['generated_prompt']
+                        music_info_list.append(info)
 
-            for idx, music_id in enumerate(music_ids, 1):
-                music_info = await check_music_status([music_id])
-                if music_info:
-                    info = music_info[0]
-                    info['original_idea'] = original_idea
-                    info['gpt_description_prompt'] = generated_prompt
+                        st.markdown(f"### {info.get('title', 'Untitled')}")
+                        if info.get('audio_url'):
+                            st.audio(info['audio_url'])
+                        if info.get('image_url'):
+                            st.image(info['image_url'], caption="Cover Art")
+                        
+                        st.write("**입력한 아이디어:**", info['original_idea'])
+                        st.write("**생성된 프롬프트:**", info['gpt_description_prompt'])
+                        st.markdown("---")
 
-                    music_col1, music_col2 = st.columns(2)
-                    display_music_info(info, music_col1, music_col2)
-                    
-                    st.write("---")  # 구분선 추가
-
-                    if recipient_email:
-                        if await send_email_async(recipient_email, info['audio_url'], style):
-                            st.success(f"생성된 음악 링크가 {recipient_email}로 전송되었습니다.")
-                        else:
-                            st.error("이메일 전송에 실패했습니다.")
-                            
-def main():
-    asyncio.run(main_async())
+            if music_info_list and recipient_email:
+                if await send_email_async(recipient_email, music_info_list):
+                    st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
+                else:
+                    st.error("이메일 전송에 실패했습니다.")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main_async())
