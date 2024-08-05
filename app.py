@@ -7,7 +7,7 @@ import json
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-SUNO_API_ENDPOINT = "https://suno-api-one-liart.vercel.app"
+SUNO_API_ENDPOINT = "https://suno-apiupdate-deck6s-projects.vercel.app"
 MAX_WAIT_TIME = 600  # 최대 대기 시간을 10분(600초)으로 설정
 
 def requests_retry_session(
