@@ -277,10 +277,6 @@ async def main_async():
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
 
-                    elapsed_time = time.time() - start_time
-                    progress = min(elapsed_time / MAX_WAIT_TIME, 1.0)
-                    progress_bar.progress(progress)
-                    status_text.text(f"음악 생성 중... ({int(elapsed_time)}초 경과)")
 
                     if all_complete:
                         st.success("모든 음악 생성이 완료되었습니다!")
