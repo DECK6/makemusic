@@ -85,7 +85,7 @@ async def generate_music_async(prompt):
             return None
 
 async def check_music_status(music_ids):
-    """생성된 음악의 상태를 확인합니다."""
+#    """생성된 음악의 상태를 확인합니다."""
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(f"{SUNO_API_ENDPOINT}/api/get?ids={','.join(music_ids)}", timeout=30) as response:
