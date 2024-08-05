@@ -136,16 +136,19 @@ async def translate_to_korean(text):
 async def send_email_async(recipient_email, music_info_list):
     """작곡된 음악을 이메일로 전송합니다."""
     msg = MIMEMultipart()
-    msg['Subject'] = '2024 Youth E-Sports Festival에서 작곡한 게임 음악이 도착했습니다.'
+    msg['Subject'] = '2024 Youth E-Sports Festival에서 제작한 게임 음악이 도착했습니다.'
     msg['From'] = EMAIL_SETTINGS["SENDER_EMAIL"]
     msg['To'] = recipient_email
 
     # HTML 본문 생성
     html_content = "<html><body>"
     for idx, info in enumerate(music_info_list, 1):
-        html_content += f"<h2>음악 {idx}: {info.get('title', 'Untitled')}</h2>"
+        translated_title = st.session_state['translated_titles'].get(info.get('title', 'Untitled'), info.get('title', 'Untitled'))
+        translated_prompt = st.session_state['translated_prompts'].get(info.get('gpt_description_prompt', 'No prompt available'), info.get('gpt_description_prompt', 'No prompt available'))
+
+        html_content += f"<h2>음악 {idx}: {translated_title}</h2>"
         html_content += f"<p><strong>아이디어:</strong> {st.session_state.get('original_idea', 'N/A')}</p>"
-        html_content += f"<p><strong>프롬프트:</strong> {info.get('gpt_description_prompt', 'No prompt available')}</p>"
+        html_content += f"<p><strong>프롬프트:</strong> {translated_prompt}</p>"
         html_content += f"<p><a href='{info.get('audio_url', '#')}'>음악 다운로드 링크</a></p>"
         if info.get('image_url'):
             html_content += f"<img src='{info['image_url']}' alt='Cover Art' style='max-width:300px;'><br>"
