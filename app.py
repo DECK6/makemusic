@@ -111,20 +111,6 @@ async def generate_prompt(idea, style):
         st.error(f"프롬프트 생성 중 오류 발생: {e}")
         return None
 
-async def translate_to_korean(text):
-    """텍스트를 한국어로 번역합니다."""
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a translator specialized in translating English text to Korean. Provide a natural, context-appropriate translation."},
-                {"role": "user", "content": f"Translate the following text to natural, context-appropriate Korean: {text}"}
-            ]
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        st.error(f"번역 중 오류 발생: {e}")
-        return text
 
 async def send_email_async(recipient_email, music_info_list):
     """생성된 모든 음악 정보를 포함하여 이메일을 전송합니다."""
@@ -200,6 +186,29 @@ def display_music_info(music_info):
             st.write(f"입력한 아이디어: {music_info['original_idea']}")
         st.write(f"프롬프트: {music_info.get('gpt_description_prompt', 'No prompt available')}")
 
+# 번역 캐시를 저장할 딕셔너리
+translation_cache = {}
+
+async def translate_to_korean(text):
+    """텍스트를 한국어로 번역합니다."""
+    if text in translation_cache:
+        return translation_cache[text]
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a translator specialized in translating English text to Korean. Provide a natural, context-appropriate translation."},
+                {"role": "user", "content": f"Translate the following text to natural, context-appropriate Korean: {text}"}
+            ]
+        )
+        translated_text = completion.choices[0].message.content
+        translation_cache[text] = translated_text
+        return translated_text
+    except Exception as e:
+        st.error(f"번역 중 오류 발생: {e}")
+        return text
+
 async def main_async():
     st.image(HEADER_URL, use_column_width=True)
     st.title("AI 게임 음악 생성기")
@@ -261,9 +270,11 @@ async def main_async():
                         info['original_idea'] = st.session_state['original_idea']
                         info['gpt_description_prompt'] = st.session_state['generated_prompt']
                         
-                        # 번역된 제목 추가
+                        # 번역된 제목 및 프롬프트 추가
                         translated_title = await translate_to_korean(info['title'])
+                        translated_prompt = await translate_to_korean(info['gpt_description_prompt'])
                         info['title'] = translated_title
+                        info['gpt_description_prompt'] = translated_prompt
 
                         with music_info_placeholders[idx].container():
                             display_music_info(info)
