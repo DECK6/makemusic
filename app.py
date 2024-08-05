@@ -43,11 +43,11 @@ def check_server_status():
     except requests.exceptions.RequestException:
         return False
 
-async def generate_music_async(prompt, make_instrumental=False):
+async def generate_music_async(prompt):
     """API를 사용하여 비동기적으로 음악을 생성합니다."""
     payload = {
         "prompt": prompt,
-        "make_instrumental": make_instrumental,
+        "make_instrumental": True,  # 항상 연주 버전 생성
         "wait_audio": False  # 비동기 모드 사용
     }
     headers = {
@@ -102,8 +102,8 @@ async def generate_prompt(idea):
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an assistant specialized in creating prompts for game music generation. Convert user ideas into detailed prompts suitable for AI music generation, focusing on game music characteristics."},
-                {"role": "user", "content": f"Create a detailed prompt for game music based on this idea: {idea}"}
+                {"role": "system", "content": "You are an assistant specialized in creating prompts for instrumental game music generation. Convert user ideas into detailed prompts suitable for AI music generation, focusing on game music characteristics without lyrics."},
+                {"role": "user", "content": f"Create a simple prompt without detail description for instrumental game music based on this idea: {idea}"}
             ]
         )
         return completion.choices[0].message.content
@@ -120,7 +120,6 @@ async def main_async():
         return
 
     idea = st.text_area("게임 음악 아이디어를 입력하세요:", "레트로 스타일의 우주 탐험 게임 배경음악")
-    make_instrumental = st.checkbox("연주 버전 생성", value=True)
 
     if st.button("음악 생성"):
         with st.spinner("프롬프트 생성 중..."):
@@ -132,7 +131,7 @@ async def main_async():
             st.write("생성된 프롬프트:", prompt)
 
         with st.spinner("음악 생성 요청을 보내는 중..."):
-            result = await generate_music_async(prompt, make_instrumental)
+            result = await generate_music_async(prompt)
 
         if result:
             music_ids = extract_music_ids(result)
