@@ -214,7 +214,7 @@ async def main_async():
                 st.session_state['music_ids'] = music_ids
                 st.session_state['original_idea'] = idea
                 st.session_state['generated_prompt'] = prompt
-                st.success(f"음악 생성 완료! {len(music_ids)}개의 트랙이 생성되었습니다.")
+                st.success(f"음악 생성 요청 완료! {len(music_ids)}개의 트랙이 생성 중입니다.")
 
     with col2:
         if 'music_ids' in st.session_state:
@@ -237,7 +237,20 @@ async def main_async():
                         st.write("**생성된 프롬프트:**", info['gpt_description_prompt'])
                         st.markdown("---")
 
-            if music_info_list and recipient_email:
+                # 모든 음악의 상태를 확인
+                all_complete = False
+                while not all_complete:
+                    all_complete = True
+                    for info in music_info_list:
+                        updated_info = await fetch_music_info(session, info['id'])
+                        if updated_info['status'] != 'complete':
+                            all_complete = False
+                            break
+                    if not all_complete:
+                        await asyncio.sleep(5)  # 5초 대기 후 다시 확인
+
+            # 모든 음악 생성이 완료된 후 이메일 전송
+            if all_complete and recipient_email:
                 if await send_email_async(recipient_email, music_info_list):
                     st.success(f"생성된 음악 정보가 {recipient_email}로 전송되었습니다.")
                 else:
