@@ -130,6 +130,15 @@ async def send_email_async(recipient_email, audio_url, style):
         st.error(f"이메일 전송 중 오류가 발생했습니다: {str(e)}")
         return False
 
+def extract_music_ids(result):
+    """API 응답에서 음악 ID를 추출합니다."""
+    music_ids = []
+    if isinstance(result, list) and len(result) > 0:
+        for item in result[0].values():
+            if isinstance(item, dict) and 'id' in item:
+                music_ids.append(item['id'])
+    return music_ids
+
 def display_music_info(music_info, col1, col2):
     """음악 정보를 표시합니다."""
     with col1:
